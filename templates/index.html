@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Obra</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Control de Asistencia</h1>
+        <div id="status-card" class="card">
+            <p>Estado: <span id="status">Esperando...</span></p>
+            <p>Distancia: <span id="distancia">0</span>m</p>
+        </div>
+        <button id="start-btn">Iniciar Turno</button>
+        <p id="log"></p>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Registrar el Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/js/sw.js');
+        }
+    </script>
+</body>
+</html>
