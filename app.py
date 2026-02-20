@@ -36,7 +36,14 @@ class User(UserMixin):
 def load_user(user_id): return User(user_id)
 
 def leer_json(archivo):
-    with open(archivo, 'r') as f: return json.load(f)
+    try:
+        if not os.path.exists(archivo) or os.stat(archivo).st_size == 0:
+            return []
+        with open(archivo, 'r') as f:
+            return json.load(f)
+    except json.decoder.JSONDecodeError:
+        # Si el archivo está corrupto, reseteamos a lista vacía
+        return []
 
 def guardar_json(archivo, datos):
     with open(archivo, 'w') as f: json.dump(datos, f, indent=4)
