@@ -43,3 +43,23 @@ function sendLocation(position) {
 function handleError(err) {
     console.warn('ERROR(' + err.code + '): ' + err.message);
 }
+function iniciarRastreo() {
+    // Primera ejecución
+    obtenerYEnviar();
+    
+    // Intervalo: 50 minutos = 50 * 60 * 1000 ms
+    setInterval(obtenerYEnviar, 3000000); 
+}
+
+function obtenerYEnviar() {
+    navigator.geolocation.getCurrentPosition((pos) => {
+        fetch('/update-location', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                lat: pos.coords.latitude,
+                lon: pos.coords.longitude
+            })
+        });
+    }, null, { enableHighAccuracy: true });
+}
