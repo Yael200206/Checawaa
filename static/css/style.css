@@ -1,0 +1,104 @@
+/* Reset limpio */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Fondo blanco degradado elegante */
+body {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+    color: #111827;
+}
+
+/* Contenedor */
+.container {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Título */
+h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 35px;
+    letter-spacing: 1px;
+}
+
+/* Card minimalista */
+.card {
+    background: white;
+    padding: 35px;
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
+    margin-bottom: 25px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+}
+
+/* Texto */
+.card p {
+    font-size: 16px;
+    margin: 15px 0;
+    color: #374151;
+}
+
+/* Estado en negro fuerte */
+#status {
+    font-weight: 700;
+    color: #000000;
+}
+
+/* Distancia en gris elegante */
+#distancia {
+    font-weight: 600;
+    color: #6b7280;
+}
+
+/* Botón azul protagonista */
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    background: #2563eb;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background: #1d4ed8;
+    transform: translateY(-3px);
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Log */
+#log {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .card {
+        padding: 25px;
+    }
+}
