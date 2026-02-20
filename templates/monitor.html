@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel de Monitoreo</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style> #map { height: 600px; width: 100%; } </style>
+</head>
+<body>
+    <h1>Ubicaciones del Día</h1>
+    <a href="/logout">Cerrar Sesión</a>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([19.4326, -99.1332], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        var registros = {{ registros | tojson }};
+        registros.forEach(r => {
+            L.marker([r.lat, r.lon]).addTo(map)
+                .bindPopup(`<b>${r.usuario}</b><br>${r.fecha}`);
+        });
+    </script>
+</body>
+</html>
