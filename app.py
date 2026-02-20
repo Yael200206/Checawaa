@@ -84,16 +84,51 @@ def update_location():
 @app.route('/monitor')
 @login_required
 def monitor():
+    usuarios = leer_json(USUARIOS_FILE)
     registros = leer_json(REGISTROS_FILE)
-    return render_template('monitor.html', registros=registros)
+    
+    hoy = datetime.datetime.now().strftime("%Y-%m-%d")
+    
+    # Obtener lista de nombres de usuarios que han registrado algo HOY
+    quienes_registraron = {r['usuario'] for r in registros if r['fecha'].startswith(hoy)}
+    
+    # Separar usuarios
+    activos = []
+    faltantes = []
+    
+    for u in usuarios:
+        if u['username'] == 'admin': continue # Ignorar al admin
+        
+        if u['username'] in quienes_registraron:
+            # Buscar su última ubicación para el mapa
+            ultima_ub = [r for r in registros if r['usuario'] == u['username']][-1]
+            activos.append(ultima_ub)
+        else:
+            faltantes.append(u['username'])
+
+    return render_template('monitor.html', activos=activos, faltantes=faltantes, registros_todos=registros)
+
+
 
 @app.route('/send-reminders')
 def send_reminders():
-    # Esta ruta la llamarás con un Cron Job a las 8 AM
-    msg = Message("¡Inicia tu turno!", sender=app.config['MAIL_USERNAME'], recipients=["empleado1@gmail.com"])
-    msg.body = "Buenos días. Por favor entra a la App y presiona 'Iniciar Turno'."
-    mail.send(msg)
-    return "Correos enviados"
+    usuarios = leer_json(USUARIOS_FILE)
+    registros = leer_json(REGISTROS_FILE)
+    hoy = datetime.datetime.now().strftime("%Y-%m-%d")
+    quienes_registraron = {r['usuario'] for r in registros if r['fecha'].startswith(hoy)}
+    
+    # Solo enviar a los que NO han registrado hoy
+    destinatarios = [u['email'] for u in usuarios if u['username'] != 'admin' and u['username'] not in quienes_registraron]
+    
+    if destinatarios:
+        msg = Message("⚠️ Recordatorio: Inicia tu Turno", 
+                      sender=app.config['MAIL_USERNAME'], 
+                      recipients=destinatarios)
+        msg.body = "Hola, se ha detectado que aún no has iniciado tu monitoreo de ubicación para el turno de hoy. Por favor, ingresa a la app."
+        mail.send(msg)
+        return "Recordatorios enviados"
+    
+    return "Todos han iniciado turno"
 
 @app.route('/logout')
 def logout():

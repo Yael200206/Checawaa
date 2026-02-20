@@ -3,23 +3,66 @@
 <head>
     <title>Panel de Monitoreo</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <style> #map { height: 600px; width: 100%; } </style>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background: #f8f9fa; }
+        .flex-container { display: flex; gap: 20px; }
+        #map { height: 500px; flex: 2; border-radius: 10px; border: 2px solid #ddd; }
+        .sidebar { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .status-badge { padding: 5px 10px; border-radius: 5px; font-size: 12px; }
+        .online { background: #d4edda; color: #155724; }
+        .offline { background: #f8d7da; color: #721c24; }
+        .btn-email { background: #ffc107; border: none; padding: 10px; cursor: pointer; width: 100%; border-radius: 5px; font-weight: bold; margin-top: 10px; }
+    </style>
 </head>
 <body>
-    <h1>Ubicaciones del Día</h1>
-    <a href="/logout">Cerrar Sesión</a>
-    <div id="map"></div>
+    <h1>Control de Personal - Hoy</h1>
+    
+    <div class="flex-container">
+        <div id="map"></div>
+
+        <div class="sidebar">
+            <h3>Estado de Turnos</h3>
+            
+            <h4>✅ Activos (En sitio):</h4>
+            <ul>
+                {% for a in activos %}
+                <li><strong>{{ a.usuario }}</strong> <span class="status-badge online">Visto: {{ a.fecha.split(' ')[1] }}</span></li>
+                {% endfor %}
+            </ul>
+
+            <h4>❌ Faltan de Iniciar:</h4>
+            <ul>
+                {% for f in faltantes %}
+                <li>{{ f }} <span class="status-badge offline">Ausente</span></li>
+                {% endfor %}
+            </ul>
+
+            <hr>
+            <button class="btn-email" onclick="enviarRecordatorio()">📧 Enviar Recordatorio Grupal</button>
+            <p id="email-status" style="font-size: 12px; color: green;"></p>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        var map = L.map('map').setView([21.942259, -102.247428], 12);
+        var map = L.map('map').setView([19.4326, -99.1332], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        var registros = {{ registros | tojson }};
-        registros.forEach(r => {
+        // Marcadores solo de los que están ACTIVOS ahora
+        var activos = {{ activos | tojson }};
+        activos.forEach(r => {
             L.marker([r.lat, r.lon]).addTo(map)
-                .bindPopup(`<b>${r.usuario}</b><br>${r.fecha}`);
+                .bindPopup(`<b>${r.usuario}</b><br>Último reporte: ${r.fecha}`);
         });
+
+        function enviarRecordatorio() {
+            document.getElementById('email-status').innerText = "Enviando...";
+            fetch('/send-reminders')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('email-status').innerText = "¡Correos enviados con éxito!";
+                });
+        }
     </script>
 </body>
 </html>

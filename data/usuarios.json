@@ -1,14 +1,5 @@
 [
-    {
-        "username": "admin",
-        "pass": "123"
-    },
-    {
-        "username": "empleado1",
-        "pass": "123"
-    },
-    {
-        "username": "empleado2",
-        "pass": "abc456"
-    }
+    { "username": "admin", "pass": "123", "email": "jefe@obra.com" },
+    { "username": "empleado1", "pass": "123", "email": "juan@gmail.com" },
+      { "username": "empleado2", "pass": "123", "email": "juan@gmail.com" }
 ]
