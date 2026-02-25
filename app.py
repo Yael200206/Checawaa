@@ -87,7 +87,7 @@ def enviar_recordatorio_automatizado():
 # Configurar el reloj interno (Scheduler)
 scheduler = BackgroundScheduler(daemon=True)
 # Ajustar hora aquí (hour=8, minute=0)
-scheduler.add_job(enviar_recordatorio_automatizado, 'cron', hour=11, minute=29)
+scheduler.add_job(enviar_recordatorio_automatizado, 'cron', hour=8, minute=0)
 scheduler.start()
 
 # --- RUTAS ---
