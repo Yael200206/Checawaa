@@ -1,29 +1,40 @@
 import json, os, datetime
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_file
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 
 app = Flask(__name__)
-app.secret_key = 'clave_secreta_muy_segura' # Cambia esto
+app.secret_key = 'clave_secreta_muy_segura' # Cambia esto por algo aleatorio
 
 # --- CONFIGURACIÓN DE CORREO (GMAIL) ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'tu-correo@gmail.com'
-app.config['MAIL_PASSWORD'] = 'tu-contraseña-de-aplicacion' # No es tu clave normal
+app.config['MAIL_USERNAME'] = 'hiram060220@gmail.com'
+app.config['MAIL_PASSWORD'] = 'mcgc unmv wkci dbrr' 
 mail = Mail(app)
 
 DATA_DIR = 'data'
 REGISTROS_FILE = os.path.join(DATA_DIR, 'registros.json')
 USUARIOS_FILE = os.path.join(DATA_DIR, 'usuarios.json')
 
-# Crear carpeta y archivos si no existen
+# --- INICIALIZACIÓN DE ARCHIVOS ---
 if not os.path.exists(DATA_DIR): os.makedirs(DATA_DIR)
+
 if not os.path.exists(USUARIOS_FILE):
-    with open(USUARIOS_FILE, 'w') as f: json.dump([{"username": "admin", "pass": "123"}, {"username": "empleado1", "pass": "123"}], f)
-if not os.path.exists(REGISTROS_FILE):
-    with open(REGISTROS_FILE, 'w') as f: json.dump([], f)
+    # Si no existe, creamos el admin y un empleado de prueba con email
+    with open(USUARIOS_FILE, 'w') as f:
+        json.dump([
+            {"username": "admin", "pass": "123", "email": "admin@test.com"},
+            {"username": "empleado1", "pass": "123", "email": "empleado1@test.com"}
+        ], f, indent=4)
+
+if not os.path.exists(REGISTROS_FILE) or os.stat(REGISTROS_FILE).st_size == 0:
+    with open(REGISTROS_FILE, 'w') as f:
+        json.dump([], f)
 
 # --- GESTIÓN DE SESIONES ---
 login_manager = LoginManager(app)
@@ -41,23 +52,29 @@ def leer_json(archivo):
             return []
         with open(archivo, 'r') as f:
             return json.load(f)
-    except json.decoder.JSONDecodeError:
-        # Si el archivo está corrupto, reseteamos a lista vacía
+    except (json.decoder.JSONDecodeError, FileNotFoundError):
         return []
 
 def guardar_json(archivo, datos):
-    with open(archivo, 'w') as f: json.dump(datos, f, indent=4)
+    with open(archivo, 'w') as f:
+        json.dump(datos, f, indent=4)
 
 # --- RUTAS ---
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         user_input = request.form['username']
         pass_input = request.form['password']
         usuarios = leer_json(USUARIOS_FILE)
+        
         if any(u['username'] == user_input and u['pass'] == pass_input for u in usuarios):
             login_user(User(user_input))
+            # Redirección inteligente
+            if user_input == 'admin':
+                return redirect(url_for('monitor'))
             return redirect(url_for('index'))
+            
         flash('Usuario o contraseña incorrectos')
     return render_template('login.html')
 
@@ -71,64 +88,147 @@ def index():
 def update_location():
     data = request.json
     registros = leer_json(REGISTROS_FILE)
+    ahora = datetime.datetime.now()
+    
     nuevo = {
         "usuario": current_user.id,
         "lat": data['lat'],
         "lon": data['lon'],
-        "fecha": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "fecha": ahora.strftime("%Y-%m-%d"),
+        "hora": ahora.strftime("%H:%M:%S")
     }
     registros.append(nuevo)
     guardar_json(REGISTROS_FILE, registros)
-    return jsonify({"status": "Ubicación guardada"})
+    return jsonify({"status": "OK"})
 
 @app.route('/monitor')
 @login_required
 def monitor():
-    usuarios = leer_json(USUARIOS_FILE)
-    registros = leer_json(REGISTROS_FILE)
+    # Solo el admin puede ver el monitor
+    if current_user.id != 'admin':
+        return redirect(url_for('index'))
     
+    usuarios = leer_json(USUARIOS_FILE)
+    todos_registros = leer_json(REGISTROS_FILE)
     hoy = datetime.datetime.now().strftime("%Y-%m-%d")
     
-    # Obtener lista de nombres de usuarios que han registrado algo HOY
-    quienes_registraron = {r['usuario'] for r in registros if r['fecha'].startswith(hoy)}
+    # 1. Procesar Asistencia para la Tabla y Gráfica
+    asistencia = []
+    quienes_registraron_hoy = set()
     
-    # Separar usuarios
+    for reg in todos_registros:
+        hora_reg = reg.get('hora', '00:00:00')
+        # Lógica de retardo (después de las 08:30:00)
+        es_retardo = hora_reg > "08:30:00"
+        
+        asistencia.append({
+            "usuario": reg.get('usuario', 'S/N'),
+            "fecha": reg.get('fecha', 'S/F'),
+            "hora": hora_reg,
+            "status": "RETARDO" if es_retardo else "PUNTUAL"
+        })
+        
+        if reg.get('fecha') == hoy:
+            quienes_registraron_hoy.add(reg.get('usuario'))
+
+    # 2. Procesar Activos (Última ubicación) para el MAPA
     activos = []
     faltantes = []
     
     for u in usuarios:
-        if u['username'] == 'admin': continue # Ignorar al admin
+        if u['username'] == 'admin': continue
         
-        if u['username'] in quienes_registraron:
-            # Buscar su última ubicación para el mapa
-            ultima_ub = [r for r in registros if r['usuario'] == u['username']][-1]
-            activos.append(ultima_ub)
-        else:
+        # Filtramos registros para este usuario y tomamos el último para el mapa
+        reg_user = [r for r in todos_registros if r['usuario'] == u['username']]
+        if reg_user:
+            activos.append(reg_user[-1])
+        
+        # Si no ha registrado nada HOY, está faltante
+        if u['username'] not in quienes_registraron_hoy:
             faltantes.append(u['username'])
 
-    return render_template('monitor.html', activos=activos, faltantes=faltantes, registros_todos=registros)
-
-
+    # Pasamos las 3 variables necesarias para monitor.html
+    return render_template('monitor.html', 
+                           asistencia=asistencia, 
+                           activos=activos, 
+                           faltantes=faltantes)
 
 @app.route('/send-reminders')
+@login_required
 def send_reminders():
     usuarios = leer_json(USUARIOS_FILE)
     registros = leer_json(REGISTROS_FILE)
     hoy = datetime.datetime.now().strftime("%Y-%m-%d")
-    quienes_registraron = {r['usuario'] for r in registros if r['fecha'].startswith(hoy)}
+    quienes_registraron = {r['usuario'] for r in registros if r['fecha'] == hoy}
     
-    # Solo enviar a los que NO han registrado hoy
     destinatarios = [u['email'] for u in usuarios if u['username'] != 'admin' and u['username'] not in quienes_registraron]
     
     if destinatarios:
-        msg = Message("⚠️ Recordatorio: Inicia tu Turno", 
-                      sender=app.config['MAIL_USERNAME'], 
-                      recipients=destinatarios)
-        msg.body = "Hola, se ha detectado que aún no has iniciado tu monitoreo de ubicación para el turno de hoy. Por favor, ingresa a la app."
-        mail.send(msg)
-        return "Recordatorios enviados"
+        try:
+            msg = Message("⚠️ Recordatorio: Inicia tu Turno", 
+                          sender=app.config['MAIL_USERNAME'], 
+                          recipients=destinatarios)
+            msg.body = "Hola, se ha detectado que aún no has iniciado tu monitoreo de ubicación de hoy. Por favor, ingresa a la app."
+            mail.send(msg)
+            return "Recordatorios enviados"
+        except Exception as e:
+            return f"Error al enviar: {str(e)}"
     
-    return "Todos han iniciado turno"
+    return "No hay usuarios faltantes hoy"
+
+@app.route('/reporte-pdf')
+@login_required
+def reporte_pdf():
+    registros = leer_json(REGISTROS_FILE)
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    p.setTitle("Reporte de Asistencia Maestros")
+    
+    # Encabezado
+    p.drawString(100, 750, f"REPORTE DE ASISTENCIA - GENERADO: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    p.line(100, 745, 520, 745)
+    
+    y = 710
+    p.drawString(100, y, "Maestro")
+    p.drawString(200, y, "Fecha")
+    p.drawString(300, y, "Hora")
+    p.drawString(400, y, "Estado")
+    y -= 25
+    
+    stats = {}
+    
+    # Listado de registros
+    for r in registros:
+        hora = r.get('hora', '00:00:00')
+        estado = "RETARDO" if hora > "08:30:00" else "PUNTUAL"
+        
+        p.drawString(100, y, str(r.get('usuario', 'S/N')))
+        p.drawString(200, y, str(r.get('fecha', 'S/F')))
+        p.drawString(300, y, str(hora))
+        p.drawString(400, y, estado)
+        
+        # Estadísticas de retardos
+        if estado == "RETARDO":
+            usr = r.get('usuario', 'S/N')
+            stats[usr] = stats.get(usr, 0) + 1
+        
+        y -= 15
+        if y < 80: # Nueva página si se acaba el espacio
+            p.showPage()
+            y = 750
+
+    # Resumen final
+    y -= 40
+    p.drawString(100, y, "RESUMEN TOTAL DE RETARDOS ACUMULADOS:")
+    p.line(100, y-5, 380, y-5)
+    y -= 25
+    for user, count in stats.items():
+        p.drawString(120, y, f"• {user}: {count} retardos.")
+        y -= 15
+
+    p.save()
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name="reporte_asistencia.pdf", mimetype='application/pdf')
 
 @app.route('/logout')
 def logout():
@@ -136,4 +236,4 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
