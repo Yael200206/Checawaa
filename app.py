@@ -6,8 +6,11 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 
+# Librería para la tarea automática a las 8 AM
+from apscheduler.schedulers.background import BackgroundScheduler
+
 app = Flask(__name__)
-app.secret_key = 'clave_secreta_muy_segura' # Cambia esto por algo aleatorio
+app.secret_key = 'clave_secreta_muy_segura' 
 
 # --- CONFIGURACIÓN DE CORREO (GMAIL) ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -25,7 +28,6 @@ USUARIOS_FILE = os.path.join(DATA_DIR, 'usuarios.json')
 if not os.path.exists(DATA_DIR): os.makedirs(DATA_DIR)
 
 if not os.path.exists(USUARIOS_FILE):
-    # Si no existe, creamos el admin y un empleado de prueba con email
     with open(USUARIOS_FILE, 'w') as f:
         json.dump([
             {"username": "admin", "pass": "123", "email": "admin@test.com"},
@@ -59,6 +61,35 @@ def guardar_json(archivo, datos):
     with open(archivo, 'w') as f:
         json.dump(datos, f, indent=4)
 
+# --- LÓGICA DE CORREOS AUTOMÁTICOS ---
+def enviar_recordatorio_automatizado():
+    """Esta función la llama el Scheduler a las 8:00 AM"""
+    with app.app_context():
+        print(f"[{datetime.datetime.now()}] Iniciando envío automático de las 8:00 AM...")
+        usuarios = leer_json(USUARIOS_FILE)
+        registros = leer_json(REGISTROS_FILE)
+        hoy = datetime.datetime.now().strftime("%Y-%m-%d")
+        quienes_registraron = {r['usuario'] for r in registros if r['fecha'] == hoy}
+        
+        destinatarios = [u['email'] for u in usuarios if u['username'] != 'admin' and u['username'] not in quienes_registraron]
+        
+        if destinatarios:
+            try:
+                msg = Message("⚠️ Recordatorio Automático: Inicia tu Turno", 
+                              sender=app.config['MAIL_USERNAME'], 
+                              recipients=destinatarios)
+                msg.body = "Buenos días. Son las 8:00 AM y el sistema aún no detecta tu registro de hoy. Por favor inicia tu monitoreo."
+                mail.send(msg)
+                print(f"✅ Correos enviados a: {destinatarios}")
+            except Exception as e:
+                print(f"❌ Error en envío automático: {e}")
+
+# Configurar el reloj interno (Scheduler)
+scheduler = BackgroundScheduler(daemon=True)
+# Ajustar hora aquí (hour=8, minute=0)
+scheduler.add_job(enviar_recordatorio_automatizado, 'cron', hour=11, minute=29)
+scheduler.start()
+
 # --- RUTAS ---
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -70,7 +101,6 @@ def login():
         
         if any(u['username'] == user_input and u['pass'] == pass_input for u in usuarios):
             login_user(User(user_input))
-            # Redirección inteligente
             if user_input == 'admin':
                 return redirect(url_for('monitor'))
             return redirect(url_for('index'))
@@ -104,7 +134,6 @@ def update_location():
 @app.route('/monitor')
 @login_required
 def monitor():
-    # Solo el admin puede ver el monitor
     if current_user.id != 'admin':
         return redirect(url_for('index'))
     
@@ -112,13 +141,11 @@ def monitor():
     todos_registros = leer_json(REGISTROS_FILE)
     hoy = datetime.datetime.now().strftime("%Y-%m-%d")
     
-    # 1. Procesar Asistencia para la Tabla y Gráfica
     asistencia = []
     quienes_registraron_hoy = set()
     
     for reg in todos_registros:
         hora_reg = reg.get('hora', '00:00:00')
-        # Lógica de retardo (después de las 08:30:00)
         es_retardo = hora_reg > "08:30:00"
         
         asistencia.append({
@@ -131,23 +158,17 @@ def monitor():
         if reg.get('fecha') == hoy:
             quienes_registraron_hoy.add(reg.get('usuario'))
 
-    # 2. Procesar Activos (Última ubicación) para el MAPA
     activos = []
     faltantes = []
     
     for u in usuarios:
         if u['username'] == 'admin': continue
-        
-        # Filtramos registros para este usuario y tomamos el último para el mapa
         reg_user = [r for r in todos_registros if r['usuario'] == u['username']]
         if reg_user:
             activos.append(reg_user[-1])
-        
-        # Si no ha registrado nada HOY, está faltante
         if u['username'] not in quienes_registraron_hoy:
             faltantes.append(u['username'])
 
-    # Pasamos las 3 variables necesarias para monitor.html
     return render_template('monitor.html', 
                            asistencia=asistencia, 
                            activos=activos, 
@@ -156,25 +177,9 @@ def monitor():
 @app.route('/send-reminders')
 @login_required
 def send_reminders():
-    usuarios = leer_json(USUARIOS_FILE)
-    registros = leer_json(REGISTROS_FILE)
-    hoy = datetime.datetime.now().strftime("%Y-%m-%d")
-    quienes_registraron = {r['usuario'] for r in registros if r['fecha'] == hoy}
-    
-    destinatarios = [u['email'] for u in usuarios if u['username'] != 'admin' and u['username'] not in quienes_registraron]
-    
-    if destinatarios:
-        try:
-            msg = Message("⚠️ Recordatorio: Inicia tu Turno", 
-                          sender=app.config['MAIL_USERNAME'], 
-                          recipients=destinatarios)
-            msg.body = "Hola, se ha detectado que aún no has iniciado tu monitoreo de ubicación de hoy. Por favor, ingresa a la app."
-            mail.send(msg)
-            return "Recordatorios enviados"
-        except Exception as e:
-            return f"Error al enviar: {str(e)}"
-    
-    return "No hay usuarios faltantes hoy"
+    # Reutilizamos la función de envío para el botón manual
+    enviar_recordatorio_automatizado()
+    return "Proceso de recordatorios ejecutado"
 
 @app.route('/reporte-pdf')
 @login_required
@@ -184,7 +189,6 @@ def reporte_pdf():
     p = canvas.Canvas(buffer, pagesize=letter)
     p.setTitle("Reporte de Asistencia Maestros")
     
-    # Encabezado
     p.drawString(100, 750, f"REPORTE DE ASISTENCIA - GENERADO: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     p.line(100, 745, 520, 745)
     
@@ -197,27 +201,23 @@ def reporte_pdf():
     
     stats = {}
     
-    # Listado de registros
     for r in registros:
         hora = r.get('hora', '00:00:00')
         estado = "RETARDO" if hora > "08:30:00" else "PUNTUAL"
-        
         p.drawString(100, y, str(r.get('usuario', 'S/N')))
         p.drawString(200, y, str(r.get('fecha', 'S/F')))
         p.drawString(300, y, str(hora))
         p.drawString(400, y, estado)
         
-        # Estadísticas de retardos
         if estado == "RETARDO":
             usr = r.get('usuario', 'S/N')
             stats[usr] = stats.get(usr, 0) + 1
         
         y -= 15
-        if y < 80: # Nueva página si se acaba el espacio
+        if y < 80: 
             p.showPage()
             y = 750
 
-    # Resumen final
     y -= 40
     p.drawString(100, y, "RESUMEN TOTAL DE RETARDOS ACUMULADOS:")
     p.line(100, y-5, 380, y-5)
@@ -236,4 +236,5 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # use_reloader=False es obligatorio para evitar que el scheduler se ejecute 2 veces
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
