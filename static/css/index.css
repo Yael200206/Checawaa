@@ -1,65 +1,167 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
 }
 
-body {
-    min-height: 100vh;
-    background: radial-gradient(circle at top left, #1e3a8a, #0f172a 60%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Segoe UI', sans-serif;
-    color: #f1f5f9;
+body{
+
+min-height:100vh;
+
+background:linear-gradient(135deg,#eef2f7,#dbe3ef);
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+font-family:'Segoe UI',sans-serif;
+
+color:#1f2937;
+
+background-size:200% 200%;
+animation:bgMove 10s ease infinite;
+
 }
 
-.card {
-    width: 100%;
-    max-width: 420px;
-    padding: 40px 30px;
-    border-radius: 20px;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    text-align: center;
+/* animación fondo */
+
+@keyframes bgMove{
+
+0%{background-position:0% 50%;}
+50%{background-position:100% 50%;}
+100%{background-position:0% 50%;}
+
 }
 
-h1 {
-    margin-bottom: 20px;
+/* TARJETA */
+
+.card{
+
+width:100%;
+max-width:420px;
+
+padding:45px 35px;
+
+border-radius:26px;
+
+background:white;
+
+box-shadow:0 25px 45px rgba(0,0,0,0.08);
+
+text-align:center;
+
+animation:fadeUp .7s ease;
+
+transition:.3s;
+
 }
 
-.card p {
-    margin-bottom: 20px;
-    opacity: 0.8;
+.card:hover{
+
+transform:translateY(-5px);
+
+box-shadow:0 30px 55px rgba(0,0,0,0.12);
+
 }
 
-button {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.3s ease;
+@keyframes fadeUp{
+
+from{
+opacity:0;
+transform:translateY(40px);
 }
 
-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(59,130,246,0.4);
+to{
+opacity:1;
+transform:translateY(0);
 }
 
-hr {
-    margin: 25px 0;
-    border: none;
-    height: 1px;
-    background: rgba(255,255,255,0.2);
 }
 
-@media (max-width: 480px) {
-    .card {
-        padding: 30px 20px;
-    }
+/* TITULO */
+
+h1{
+
+margin-bottom:20px;
+
+font-weight:600;
+
+}
+
+/* TEXTO */
+
+.card p{
+
+margin-bottom:22px;
+
+color:#6b7280;
+
+}
+
+/* BOTON */
+
+button{
+
+width:100%;
+
+padding:14px;
+
+border:none;
+
+border-radius:16px;
+
+background:linear-gradient(135deg,#3b82f6,#2563eb);
+
+color:white;
+
+font-weight:600;
+
+font-size:15px;
+
+cursor:pointer;
+
+transition:all .25s ease;
+
+}
+
+/* hover botón */
+
+button:hover{
+
+transform:translateY(-2px) scale(1.02);
+
+box-shadow:0 12px 25px rgba(59,130,246,0.35);
+
+}
+
+/* click botón */
+
+button:active{
+
+transform:scale(.97);
+
+}
+
+/* SEPARADOR */
+
+hr{
+
+margin:25px 0;
+
+border:none;
+
+height:1px;
+
+background:#e5e7eb;
+
+}
+
+/* RESPONSIVE */
+
+@media(max-width:480px){
+
+.card{
+padding:35px 25px;
+}
+
 }

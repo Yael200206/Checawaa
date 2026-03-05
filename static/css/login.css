@@ -6,65 +6,135 @@
 
 body {
     font-family: 'Segoe UI', sans-serif;
-    background: radial-gradient(circle at top left, #1e3a8a, #0f172a 60%);
+    background: linear-gradient(135deg, #eef2f7, #dbe3ef);
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    color: #f1f5f9;
+
+    /* animación suave del fondo */
+    background-size: 200% 200%;
+    animation: fondo 10s ease infinite;
 }
+
+/* animación fondo */
+
+@keyframes fondo {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* TARJETA */
 
 .login-card {
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(20px);
-    padding: 35px;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    background: white;
+    padding: 40px;
+    border-radius: 24px;
     width: 100%;
-    max-width: 350px;
+    max-width: 360px;
     text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+
+    /* animación al aparecer */
+    animation: aparecer 0.8s ease;
 }
 
-h2 {
-    margin-bottom: 25px;
+@keyframes aparecer {
+    from{
+        opacity:0;
+        transform: translateY(40px) scale(0.95);
+    }
+    to{
+        opacity:1;
+        transform: translateY(0) scale(1);
+    }
 }
+
+/* TITULO */
+
+h2 {
+    margin-bottom: 30px;
+    color: #1f2937;
+    font-weight: 600;
+}
+
+/* INPUTS */
 
 input {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    border: none;
-    background: rgba(255,255,255,0.1);
-    color: white;
+    padding: 14px;
+    margin-bottom: 18px;
+    border-radius: 12px;
+    border: 1px solid #d1d5db;
+    background: #f3f4f6;
+    font-size: 14px;
+    transition: all 0.25s ease;
 }
 
-input::placeholder {
-    color: rgba(255,255,255,0.6);
+/* animación al enfocar */
+
+input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
 }
+
+/* BOTON */
 
 button {
     width: 100%;
-    padding: 12px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: white;
+    padding: 14px;
     border: none;
-    border-radius: 8px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
     font-weight: 600;
+    font-size: 15px;
     cursor: pointer;
-    transition: 0.3s ease;
+    transition: all 0.25s ease;
 }
+
+/* hover botón */
 
 button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(59,130,246,0.4);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 25px rgba(59,130,246,0.35);
 }
 
+/* click botón */
+
+button:active {
+    transform: scale(0.97);
+}
+
+/* ERROR */
+
 .error {
-    background: rgba(248,113,113,0.2);
-    color: #f87171;
+    background: #fee2e2;
+    color: #b91c1c;
     padding: 10px;
-    border-radius: 8px;
+    border-radius: 10px;
     margin-bottom: 15px;
     font-size: 14px;
+
+    animation: shake 0.4s;
+}
+
+/* animación error */
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+
+/* TEXTO DE ABAJO */
+
+p {
+    color: #6b7280 !important;
 }
