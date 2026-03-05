@@ -6,11 +6,7 @@
     <title>Panel de Control - Asistencia</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
-
-
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/monitor.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/monitor.css') }}">
 </head>
 <body>
 
@@ -59,6 +55,7 @@
         <div class="sidebar-stats">
             <h3 style="margin-top:0;">Retardos Acumulados</h3>
             <canvas id="chartRetardos"></canvas>
+            
             <div id="email-status" style="margin-top:15px; font-size:13px; font-weight:bold; text-align:center;"></div>
             
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
@@ -83,19 +80,37 @@
 
     const ctx = document.getElementById('chartRetardos').getContext('2d');
     new Chart(ctx, {
-        type: 'doughnut',
+        type: 'bar', // SE CAMBIÓ DE 'doughnut' A 'bar'
         data: {
             labels: Object.keys(conteoRetardos),
             datasets: [{
+                label: 'Número de Retardos', // Etiqueta para la leyenda
                 data: Object.values(conteoRetardos),
-                backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#20c997', '#007bff'],
+                backgroundColor: [
+                    'rgba(220, 53, 69, 0.7)',  // Rojo
+                    'rgba(253, 126, 20, 0.7)', // Naranja
+                    'rgba(255, 193, 7, 0.7)',  // Amarillo
+                    'rgba(32, 201, 151, 0.7)', // Turquesa
+                    'rgba(0, 123, 255, 0.7)'  // Azul
+                ],
+                borderColor: ['#dc3545', '#fd7e14', '#ffc107', '#20c997', '#007bff'],
                 borderWidth: 1
             }]
         },
         options: {
             responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true, // Asegura que el conteo empiece en 0
+                    ticks: {
+                        stepSize: 1 // Como son personas/faltas, mostrar solo números enteros
+                    }
+                }
+            },
             plugins: { 
-                legend: { position: 'bottom' } 
+                legend: { 
+                    display: false // Ocultamos la leyenda superior porque solo hay una categoría
+                } 
             }
         }
     });
