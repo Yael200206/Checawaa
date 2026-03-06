@@ -63,57 +63,35 @@ def guardar_json(archivo, datos):
     with open(archivo, 'w') as f:
         json.dump(datos, f, indent=4)
 
-# --- LÓGICA DE CORREOS AUTOMÁTICOS ---
 def enviar_recordatorio_automatizado():
-    """Esta función la llama el Scheduler a las 8:00 AM"""
-    # Usamos el contexto de la aplicación para que Flask-Mail tenga acceso a la config
     with app.app_context():
-        ahora_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{ahora_str}] 🚀 Iniciando envío automático...")
-
         try:
-            # 1. Cargar datos
             usuarios = leer_json(USUARIOS_FILE)
             registros = leer_json(REGISTROS_FILE)
             hoy = datetime.datetime.now().strftime("%Y-%m-%d")
-
-            # 2. Identificar quiénes ya registraron hoy
             quienes_registraron = {r['usuario'] for r in registros if r.get('fecha') == hoy}
             
-            # 3. Filtrar destinatarios (que no sean admin y no hayan registrado)
-            destinatarios = [
-                u['email'] for u in usuarios 
-                if u['username'] != 'admin' and u['username'] not in quienes_registraron
-            ]
-            
+            destinatarios = list(set([u['email'] for u in usuarios if u['username'] != 'admin' and u['username'] not in quienes_registraron]))
+
             if not destinatarios:
-                print("ℹ️ No hay usuarios pendientes de registro hoy. No se enviarán correos.")
                 return
 
-            # 4. Intentar el envío
-            print(f"📧 Intentando enviar recordatorio a: {destinatarios}...")
-            
-            msg = Message(
-                "⚠️ Recordatorio Automático: Inicia tu Turno", 
-                sender=app.config['MAIL_USERNAME'], 
-                recipients=destinatarios
-            )
-            msg.body = (
-                "Buenos días.\n\n"
-                "Son las 8:00 AM y el sistema aún no detecta tu registro de hoy.\n"
-                "Por favor inicia tu monitoreo en la plataforma.\n\n"
-                "Saludos."
-            )
-            
-            # Tiempo de espera interno para evitar bloqueos infinitos
-            mail.send(msg)
-            print(f"✅ Correos enviados exitosamente a: {destinatarios}")
+            # Abrimos una sola conexión para todos los correos
+            with mail.connect() as conn:
+                for email in destinatarios:
+                    msg = Message("⚠️ Recordatorio", 
+                                  sender=app.config['MAIL_USERNAME'], 
+                                  recipients=[email])
+                    msg.body = "Hola, no olvides registrar tu entrada hoy."
+                    conn.send(msg)
+                    print(f"✅ Enviado individual a: {email}")
 
         except Exception as e:
-            # Capturamos el Errno 101 y cualquier otro para que el programa NO muera
-            print(f"❌ Error crítico en envío automático: {e}")
-            print("⚠️ El sistema continuará funcionando, pero el correo no pudo ser entregado.")
-# Configurar el reloj interno (Scheduler)
+            print(f"❌ Error de red: {e}")
+
+
+
+
 scheduler = BackgroundScheduler(daemon=True)
 # Ajustar hora aquí (hour=8, minute=0)
 scheduler.add_job(enviar_recordatorio_automatizado, 'cron', hour=8, minute=0)
