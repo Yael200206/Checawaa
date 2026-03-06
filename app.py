@@ -14,8 +14,9 @@ app.secret_key = 'clave_secreta_muy_segura'
 
 # --- CONFIGURACIÓN DE CORREO (GMAIL) --- xddd
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_TLS'] = False  # Cambia a False
+app.config['MAIL_USE_SSL'] = True   # Cambia a True
 app.config['MAIL_USERNAME'] = 'hiram060220@gmail.com'
 app.config['MAIL_PASSWORD'] = 'mcgc unmv wkci dbrr' 
 mail = Mail(app)
