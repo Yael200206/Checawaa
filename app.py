@@ -6,6 +6,9 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 import threading
+
+import smtplib
+from email.message import EmailMessage
 # Librería para la tarea automática a las 8 AM
 from apscheduler.schedulers.background import BackgroundScheduler
 # Forma segura (opcional, mejor no poner nada por ahora)
@@ -67,31 +70,51 @@ def guardar_json(archivo, datos):
     with open(archivo, 'w') as f:
         json.dump(datos, f, indent=4)
 
+
 def enviar_recordatorio_automatizado():
-    with app.app_context():
-        try:
-            usuarios = leer_json(USUARIOS_FILE)
-            registros = leer_json(REGISTROS_FILE)
-            hoy = datetime.datetime.now().strftime("%Y-%m-%d")
-            quienes_registraron = {r['usuario'] for r in registros if r.get('fecha') == hoy}
+    """Versión usando smtplib nativo para saltar problemas de Flask-Mail"""
+    # No necesitamos app_context aquí porque usamos smtplib puro
+    print(f"[{datetime.datetime.now()}] 🚀 Iniciando envío manual con smtplib...")
+    
+    try:
+        usuarios = leer_json(USUARIOS_FILE)
+        registros = leer_json(REGISTROS_FILE)
+        hoy = datetime.datetime.now().strftime("%Y-%m-%d")
+        
+        quienes_registraron = {r['usuario'] for r in registros if r.get('fecha') == hoy}
+        
+        # Filtramos y quitamos duplicados con set()
+        destinatarios = list(set([
+            u['email'] for u in usuarios 
+            if u['username'] != 'admin' and u['username'] not in quienes_registraron
+        ]))
+
+        if not destinatarios:
+            print("ℹ️ No hay destinatarios pendientes hoy.")
+            return
+
+        # Configuración desde variables de entorno de Railway
+        # Asegúrate de que en Railway se llamen exactamente así:
+        email_origen = os.getenv('MAIL_USERNAME') # o 'EMAIL_USER' como pusiste
+        password = os.getenv('MAIL_PASSWORD')     # o 'EMAIL_PASS'
+
+        # Para Gmail en Railway, intentaremos el puerto 587
+        with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+            smtp.starttls() 
+            smtp.login(email_origen, password)
             
-            destinatarios = list(set([u['email'] for u in usuarios if u['username'] != 'admin' and u['username'] not in quienes_registraron]))
+            for correo in destinatarios:
+                msg = EmailMessage()
+                msg.set_content("Buenos días. El sistema aún no detecta tu registro de hoy. Por favor inicia tu monitoreo.")
+                msg['Subject'] = "⚠️ Recordatorio Automático: Inicia tu Turno"
+                msg['From'] = email_origen
+                msg['To'] = correo
+                
+                smtp.send_message(msg)
+                print(f"✅ Correo enviado a: {correo}")
 
-            if not destinatarios:
-                return
-
-            # Abrimos una sola conexión para todos los correos
-            with mail.connect() as conn:
-                for email in destinatarios:
-                    msg = Message("⚠️ Recordatorio", 
-                                  sender=app.config['MAIL_USERNAME'], 
-                                  recipients=[email])
-                    msg.body = "Hola, no olvides registrar tu entrada hoy."
-                    conn.send(msg)
-                    print(f"✅ Enviado individual a: {email}")
-
-        except Exception as e:
-            print(f"❌ Error de red: {e}")
+    except Exception as e:
+        print(f"❌ Error fatal en smtplib: {e}")
 
 
 
