@@ -264,5 +264,6 @@ def register():
     return render_template('register.html')
 
 if __name__ == '__main__':
-    # use_reloader=False es obligatorio para evitar que el scheduler se ejecute 2 veces
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, use_reloader=False)

@@ -1,3 +1,6 @@
-flask
-geopy
+Flask
+Flask-Login
+Flask-Mail
+APScheduler
+reportlab
 gunicorn
