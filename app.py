@@ -15,7 +15,7 @@ app.secret_key = 'clave_secreta_muy_segura'
 
 # --- CONFIGURACIÓN DE CORREO (GMAIL) --- xddd
 app.config['MAIL_SERVER'] = 'smtp-relay.gmail.com' # Versión relay (más permisiva)
-app.config['MAIL_PORT'] = 465
+app.config['MAIL_PORT'] = 2525
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = 'hiram060220@gmail.com'
