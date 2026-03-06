@@ -235,6 +235,34 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        user_input = request.form['username']
+        pass_input = request.form['password']
+        email_input = request.form['email']
+        
+        usuarios = leer_json(USUARIOS_FILE)
+        
+        # Validar si el usuario ya existe
+        if any(u['username'] == user_input for u in usuarios):
+            flash('El nombre de usuario ya está en uso.')
+            return redirect(url_for('register'))
+        
+        # Crear nuevo usuario y guardar
+        nuevo_usuario = {
+            "username": user_input,
+            "pass": pass_input,
+            "email": email_input
+        }
+        usuarios.append(nuevo_usuario)
+        guardar_json(USUARIOS_FILE, usuarios)
+        
+        flash('Registro exitoso. Ahora puedes iniciar sesión.')
+        return redirect(url_for('login'))
+        
+    return render_template('register.html')
+
 if __name__ == '__main__':
     # use_reloader=False es obligatorio para evitar que el scheduler se ejecute 2 veces
     app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)

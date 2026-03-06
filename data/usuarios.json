@@ -1,6 +1,27 @@
 [
-    { "username": "admin", "pass": "123", "email": "jefe@obra.com" },
-    { "username": "empleado1", "pass": "123", "email": "utm24090717@utma.edu.mx" },
-      { "username": "empleado2", "pass": "123", "email": "utm24090330@utma.edu.mx" },
-       { "username": "empleado3", "pass": "123", "email": "utm24090717@utma.edu.mx" }
+    {
+        "username": "admin",
+        "pass": "123",
+        "email": "jefe@obra.com"
+    },
+    {
+        "username": "empleado1",
+        "pass": "123",
+        "email": "utm24090717@utma.edu.mx"
+    },
+    {
+        "username": "empleado2",
+        "pass": "123",
+        "email": "utm24090330@utma.edu.mx"
+    },
+    {
+        "username": "empleado3",
+        "pass": "123",
+        "email": "utm24090717@utma.edu.mx"
+    },
+    {
+        "username": "Hiram",
+        "pass": "123",
+        "email": "utm24090330@utma.edu.mx"
+    }
 ]
