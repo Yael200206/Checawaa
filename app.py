@@ -99,7 +99,7 @@ def enviar_recordatorio_automatizado():
         password = os.getenv('MAIL_PASSWORD')     # o 'EMAIL_PASS'
 
         # Para Gmail en Railway, intentaremos el puerto 587
-        with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+        with smtplib.SMTP('smtp.gmail.com', 465) as smtp:
             smtp.starttls() 
             smtp.login(email_origen, password)
             
