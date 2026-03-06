@@ -8,17 +8,18 @@ from reportlab.lib.pagesizes import letter
 import threading
 # Librería para la tarea automática a las 8 AM
 from apscheduler.schedulers.background import BackgroundScheduler
-
+import socket
+socket.AddressFamily = socket.AF_INET # Fuerza el uso de IPv4
 app = Flask(__name__)
 app.secret_key = 'clave_secreta_muy_segura' 
 
 # --- CONFIGURACIÓN DE CORREO (GMAIL) --- xddd
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_SERVER'] = 'smtp-relay.gmail.com' # Versión relay (más permisiva)
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_TLS'] = False  # Cambia a False
-app.config['MAIL_USE_SSL'] = True   # Cambia a True
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = 'hiram060220@gmail.com'
-app.config['MAIL_PASSWORD'] = 'mcgc unmv wkci dbrr' 
+app.config['MAIL_PASSWORD'] = 'mcgc unmv wkci dbrr'
 mail = Mail(app)
 
 DATA_DIR = 'data'
