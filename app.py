@@ -177,9 +177,12 @@ def monitor():
 @app.route('/send-reminders')
 @login_required
 def send_reminders():
-    # Reutilizamos la función de envío para el botón manual
-    enviar_recordatorio_automatizado()
-    return "Proceso de recordatorios ejecutado"
+    try:
+        # Ejecutamos la función
+        enviar_recordatorio_automatizado()
+        return "Proceso de recordatorios ejecutado correctamente"
+    except Exception as e:
+        return f"Error al enviar correos: {str(e)}", 500
 
 @app.route('/reporte-pdf')
 @login_required
