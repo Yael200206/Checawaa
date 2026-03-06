@@ -5,7 +5,7 @@ from flask_mail import Mail, Message
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-
+import threading
 # Librería para la tarea automática a las 8 AM
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -177,12 +177,10 @@ def monitor():
 @app.route('/send-reminders')
 @login_required
 def send_reminders():
-    try:
-        # Ejecutamos la función
-        enviar_recordatorio_automatizado()
-        return "Proceso de recordatorios ejecutado correctamente"
-    except Exception as e:
-        return f"Error al enviar correos: {str(e)}", 500
+    # Ejecutamos el envío en un hilo separado para que Flask responda de inmediato
+    thread = threading.Thread(target=enviar_recordatorio_automatizado)
+    thread.start()
+    return "El proceso de envío ha comenzado en segundo plano."
 
 @app.route('/reporte-pdf')
 @login_required
